@@ -27,6 +27,7 @@ See the [orignal project by Alvarowolfx](https://github.com/alvarowolfx/ESP32QRC
 This library comes with a number of example sketches. See File > Examples > ESP32QRCodeReader
 within the Arduino application. You can see them on the `examples` folder on this repository.
 
+
 ###Basic example:
 
 
