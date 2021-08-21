@@ -29,6 +29,7 @@ within the Arduino application. You can see them on the `examples` folder on thi
 
 ###Basic example:
 
+
 ```
 #include <ESP32QRCodeReader.h>
 
