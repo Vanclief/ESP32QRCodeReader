@@ -4,6 +4,8 @@ This library provides a interface to read QR Codes using an ESP32 with a camera.
 
 Internally this lib uses a slight modified version of the [Quirc library](https://github.com/dlbeer/quirc) and some code from OpenMV port on the [MaixPy](https://github.com/sipeed/MaixPy) project.
 
+This fork is adapted to work on Arduino IDE
+
 ## Demos
 
 - EN-US - See demo video at https://twitter.com/alvaroviebrantz/status/1290116219199279104?s=20
@@ -11,28 +13,21 @@ Internally this lib uses a slight modified version of the [Quirc library](https:
 
 ## Usage
 
-Is recommended to use PlatformIO to install this lib. Add `ESP32QRCodeReader` to your `platformio.ini` file.
 
-From PlatformIO library:
+#### Arduino IDE
 
-```
-lib_deps=
-  ESP32QRCodeReader
-```
+This fork is adapted to work on Arduino IDE
 
-Directly from Github:
+### Platformio
 
-```
-lib_deps =
-  alvarowolfx/ESP32QRCodeReader
-```
+See the [orignal project by Alvarowolfx](https://github.com/alvarowolfx/ESP32QRCodeReader)
 
 ## Examples
 
 This library comes with a number of example sketches. See File > Examples > ESP32QRCodeReader
 within the Arduino application. You can see them on the `examples` folder on this repository.
 
-Basic example:
+###Basic example:
 
 ```
 #include <ESP32QRCodeReader.h>
@@ -74,6 +69,10 @@ void setup()
   xTaskCreate(onQrCodeTask, "onQrCode", 4 * 1024, NULL, 4, NULL);
 }
 ```
+
+A QR-code for test is available [qr-code_example.png](/examples)
+
+
 
 ## Limitations
 
