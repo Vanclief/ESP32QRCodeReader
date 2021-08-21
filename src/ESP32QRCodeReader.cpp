@@ -1,34 +1,26 @@
 #include "ESP32QRCodeReader.h"
 
-#include "quirc/quirc.h"
 #include "Arduino.h"
+#include "quirc/quirc.h"
 
-ESP32QRCodeReader::ESP32QRCodeReader() : ESP32QRCodeReader(CAMERA_MODEL_AI_THINKER, FRAMESIZE_QVGA)
-{
-}
+ESP32QRCodeReader::ESP32QRCodeReader()
+    : ESP32QRCodeReader(CAMERA_MODEL_AI_THINKER, FRAMESIZE_QVGA) {}
 
-ESP32QRCodeReader::ESP32QRCodeReader(framesize_t frameSize) : ESP32QRCodeReader(CAMERA_MODEL_AI_THINKER, frameSize)
-{
-}
+ESP32QRCodeReader::ESP32QRCodeReader(framesize_t frameSize)
+    : ESP32QRCodeReader(CAMERA_MODEL_AI_THINKER, frameSize) {}
 
-ESP32QRCodeReader::ESP32QRCodeReader(CameraPins pins) : ESP32QRCodeReader(pins, FRAMESIZE_QVGA)
-{
-}
+ESP32QRCodeReader::ESP32QRCodeReader(CameraPins pins)
+    : ESP32QRCodeReader(pins, FRAMESIZE_QVGA) {}
 
-ESP32QRCodeReader::ESP32QRCodeReader(CameraPins pins, framesize_t frameSize) : pins(pins), frameSize(frameSize)
-{
+ESP32QRCodeReader::ESP32QRCodeReader(CameraPins pins, framesize_t frameSize)
+    : pins(pins), frameSize(frameSize) {
   qrCodeQueue = xQueueCreate(10, sizeof(struct QRCodeData));
 }
 
-ESP32QRCodeReader::~ESP32QRCodeReader()
-{
-  end();
-}
+ESP32QRCodeReader::~ESP32QRCodeReader() { end(); }
 
-QRCodeReaderSetupErr ESP32QRCodeReader::setup()
-{
-  if (!psramFound())
-  {
+QRCodeReaderSetupErr ESP32QRCodeReader::setup() {
+  if (!psramFound()) {
     return SETUP_NO_PSRAM_ERROR;
   }
 
@@ -53,27 +45,25 @@ QRCodeReaderSetupErr ESP32QRCodeReader::setup()
   cameraConfig.xclk_freq_hz = 10000000;
   cameraConfig.pixel_format = PIXFORMAT_GRAYSCALE;
 
-  //cameraConfig.frame_size = FRAMESIZE_VGA;
+  // cameraConfig.frame_size = FRAMESIZE_VGA;
   cameraConfig.frame_size = frameSize;
-  cameraConfig.jpeg_quality = 15;
+  cameraConfig.jpeg_quality = 0;
   cameraConfig.fb_count = 1;
 
-#if defined(CAMERA_MODEL_ESP_EYE)
-  pinMode(13, INPUT_PULLUP);
-  pinMode(14, INPUT_PULLUP);
-#endif
+  // #if defined(CAMERA_MODEL_ESP_EYE)
+  // pinMode(13, INPUT_PULLUP);
+  // pinMode(14, INPUT_PULLUP);
+  // #endif
 
   // camera init
   esp_err_t err = esp_camera_init(&cameraConfig);
-  if (err != ESP_OK)
-  {
+  if (err != ESP_OK) {
     return SETUP_CAMERA_INIT_ERROR;
   }
   return SETUP_OK;
 }
 
-void dumpData(const struct quirc_data *data)
-{
+void dumpData(const struct quirc_data *data) {
   Serial.printf("Version: %d\n", data->version);
   Serial.printf("ECC level: %c\n", "MLHQ"[data->ecc_level]);
   Serial.printf("Mask: %d\n", data->mask);
@@ -81,14 +71,11 @@ void dumpData(const struct quirc_data *data)
   Serial.printf("Payload: %s\n", data->payload);
 }
 
-void qrCodeDetectTask(void *taskData)
-{
+void qrCodeDetectTask(void *taskData) {
   ESP32QRCodeReader *self = (ESP32QRCodeReader *)taskData;
   camera_config_t camera_config = self->cameraConfig;
-  if (camera_config.frame_size > FRAMESIZE_SVGA)
-  {
-    if (self->debug)
-    {
+  if (camera_config.frame_size > FRAMESIZE_SVGA) {
+    if (self->debug) {
       Serial.println("Camera Size err");
     }
     vTaskDelete(NULL);
@@ -102,63 +89,53 @@ void qrCodeDetectTask(void *taskData)
   uint16_t old_width = 0;
   uint16_t old_height = 0;
 
-  if (self->debug)
-  {
+  if (self->debug) {
     Serial.printf("begin to qr_recoginze\r\n");
   }
   q = quirc_new();
-  if (q == NULL)
-  {
-    if (self->debug)
-    {
+  if (q == NULL) {
+    if (self->debug) {
       Serial.print("can't create quirc object\r\n");
     }
     vTaskDelete(NULL);
     return;
   }
 
-  while (true)
-  {
+  while (true) {
 
-    if (self->debug)
-    {
+    if (self->debug) {
       Serial.printf("alloc qr heap: %u\r\n", xPortGetFreeHeapSize());
-      Serial.printf("uxHighWaterMark = %d\r\n", uxTaskGetStackHighWaterMark(NULL));
+      Serial.printf("uxHighWaterMark = %d\r\n",
+                    uxTaskGetStackHighWaterMark(NULL));
       Serial.print("begin camera get fb\r\n");
     }
     vTaskDelay(100 / portTICK_PERIOD_MS);
 
     fb = esp_camera_fb_get();
-    if (!fb)
-    {
-      if (self->debug)
-      {
+    if (!fb) {
+      if (self->debug) {
         Serial.println("Camera capture failed");
       }
       continue;
     }
 
-    if (old_width != fb->width || old_height != fb->height)
-    {
-      if (self->debug)
-      {
-        Serial.printf("Recognizer size change w h len: %d, %d, %d \r\n", fb->width, fb->height, fb->len);
+    if (old_width != fb->width || old_height != fb->height) {
+      if (self->debug) {
+        Serial.printf("Recognizer size change w h len: %d, %d, %d \r\n",
+                      fb->width, fb->height, fb->len);
         Serial.println("Resize the QR-code recognizer.");
         // Resize the QR-code recognizer.
       }
-      if (quirc_resize(q, fb->width, fb->height) < 0)
-      {
-        if (self->debug)
-        {
-          Serial.println("Resize the QR-code recognizer err (cannot allocate memory).");
+      if (quirc_resize(q, fb->width, fb->height) < 0) {
+        if (self->debug) {
+          Serial.println(
+              "Resize the QR-code recognizer err (cannot allocate memory).");
         }
         esp_camera_fb_return(fb);
         fb = NULL;
         image = NULL;
         continue;
-      }
-      else
-      {
+      } else {
         old_width = fb->width;
         old_height = fb->height;
       }
@@ -166,22 +143,19 @@ void qrCodeDetectTask(void *taskData)
 
     // Serial.printf("quirc_begin\r\n");
     image = quirc_begin(q, NULL, NULL);
-    if (self->debug)
-    {
-      Serial.printf("Frame w h len: %d, %d, %d \r\n", fb->width, fb->height, fb->len);
+    if (self->debug) {
+      Serial.printf("Frame w h len: %d, %d, %d \r\n", fb->width, fb->height,
+                    fb->len);
     }
     memcpy(image, fb->buf, fb->len);
     quirc_end(q);
 
-    if (self->debug)
-    {
+    if (self->debug) {
       Serial.printf("quirc_end\r\n");
     }
     int count = quirc_count(q);
-    if (count == 0)
-    {
-      if (self->debug)
-      {
+    if (count == 0) {
+      if (self->debug) {
         Serial.printf("Error: not a valid qrcode\n");
       }
       esp_camera_fb_return(fb);
@@ -190,8 +164,7 @@ void qrCodeDetectTask(void *taskData)
       continue;
     }
 
-    for (int i = 0; i < count; i++)
-    {
+    for (int i = 0; i < count; i++) {
       struct quirc_code code;
       struct quirc_data data;
       quirc_decode_error_t err;
@@ -201,33 +174,26 @@ void qrCodeDetectTask(void *taskData)
 
       struct QRCodeData qrCodeData;
 
-      if (err)
-      {
+      if (err) {
         const char *error = quirc_strerror(err);
         int len = strlen(error);
-        if (self->debug)
-        {
+        if (self->debug) {
           Serial.printf("Decoding FAILED: %s\n", error);
         }
-        for (int i = 0; i < len; i++)
-        {
+        for (int i = 0; i < len; i++) {
           qrCodeData.payload[i] = error[i];
         }
         qrCodeData.valid = false;
         qrCodeData.payload[len] = '\0';
         qrCodeData.payloadLen = len;
-      }
-      else
-      {
-        if (self->debug)
-        {
+      } else {
+        if (self->debug) {
           Serial.printf("Decoding successful:\n");
           dumpData(&data);
         }
 
         qrCodeData.dataType = data.data_type;
-        for (int i = 0; i < data.payload_len; i++)
-        {
+        for (int i = 0; i < data.payload_len; i++) {
           qrCodeData.payload[i] = data.payload[i];
         }
         qrCodeData.valid = true;
@@ -236,13 +202,12 @@ void qrCodeDetectTask(void *taskData)
       }
       xQueueSend(self->qrCodeQueue, &qrCodeData, (TickType_t)0);
 
-      if (self->debug)
-      {
+      if (self->debug) {
         Serial.println();
       }
     }
 
-    //Serial.printf("finish recoginize\r\n");
+    // Serial.printf("finish recoginize\r\n");
     esp_camera_fb_return(fb);
     fb = NULL;
     image = NULL;
@@ -251,32 +216,27 @@ void qrCodeDetectTask(void *taskData)
   vTaskDelete(NULL);
 }
 
-void ESP32QRCodeReader::begin()
-{
-  beginOnCore(0);
-}
+void ESP32QRCodeReader::begin() { beginOnCore(0); }
 
-void ESP32QRCodeReader::beginOnCore(BaseType_t core)
-{
-  if (!begun)
-  {
-    xTaskCreatePinnedToCore(qrCodeDetectTask, "qrCodeDetectTask", QR_CODE_READER_STACK_SIZE, this, QR_CODE_READER_TASK_PRIORITY, &qrCodeTaskHandler, core);
+void ESP32QRCodeReader::beginOnCore(BaseType_t core) {
+  if (!begun) {
+    xTaskCreatePinnedToCore(
+        qrCodeDetectTask, "qrCodeDetectTask", QR_CODE_READER_STACK_SIZE, this,
+        QR_CODE_READER_TASK_PRIORITY, &qrCodeTaskHandler, core);
     begun = true;
   }
 }
 
-bool ESP32QRCodeReader::receiveQrCode(struct QRCodeData *qrCodeData, long timeoutMs)
-{
-  return xQueueReceive(qrCodeQueue, qrCodeData, (TickType_t)pdMS_TO_TICKS(timeoutMs)) != 0;
+bool ESP32QRCodeReader::receiveQrCode(struct QRCodeData *qrCodeData,
+                                      long timeoutMs) {
+  return xQueueReceive(qrCodeQueue, qrCodeData,
+                       (TickType_t)pdMS_TO_TICKS(timeoutMs)) != 0;
 }
 
-void ESP32QRCodeReader::end()
-{
-  if (begun)
-  {
+void ESP32QRCodeReader::end() {
+  if (begun) {
     TaskHandle_t tmpTask = qrCodeTaskHandler;
-    if (qrCodeTaskHandler != NULL)
-    {
+    if (qrCodeTaskHandler != NULL) {
       qrCodeTaskHandler = NULL;
       vTaskDelete(tmpTask);
     }
@@ -284,7 +244,4 @@ void ESP32QRCodeReader::end()
   begun = false;
 }
 
-void ESP32QRCodeReader::setDebug(bool on)
-{
-  debug = on;
-}
+void ESP32QRCodeReader::setDebug(bool on) { debug = on; }
