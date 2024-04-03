@@ -45,7 +45,7 @@ QRCodeReaderSetupErr ESP32QRCodeReader::setup() {
   cameraConfig.xclk_freq_hz = 10000000;
   cameraConfig.pixel_format = PIXFORMAT_GRAYSCALE;
 
-  // cameraConfig.frame_size = FRAMESIZE_VGA;
+  cameraConfig.frame_size = FRAMESIZE_VGA;
   cameraConfig.frame_size = frameSize;
   cameraConfig.jpeg_quality = 0;
   cameraConfig.fb_count = 1;
