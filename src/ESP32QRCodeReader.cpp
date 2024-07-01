@@ -50,12 +50,20 @@ QRCodeReaderSetupErr ESP32QRCodeReader::setup() {
   cameraConfig.jpeg_quality = 0;
   cameraConfig.fb_count = 1;
 
+  // The esp driver toggles pwdn for 10ms to 'reset' the camera.
+  pinMode(32, OUTPUT);
+  digitalWrite(32, LOW);
+  delay(1000);
+  digitalWrite(32, HIGH);
+  delay(500);
+
   // #if defined(CAMERA_MODEL_ESP_EYE)
   // pinMode(13, INPUT_PULLUP);
   // pinMode(14, INPUT_PULLUP);
   // #endif
 
   // camera init
+  Serial.println("Camera init");
   esp_err_t err = esp_camera_init(&cameraConfig);
   if (err != ESP_OK) {
     return SETUP_CAMERA_INIT_ERROR;
