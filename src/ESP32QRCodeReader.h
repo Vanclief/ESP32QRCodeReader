@@ -13,24 +13,25 @@
 #define QR_CODE_READER_TASK_PRIORITY 5
 #endif
 
-enum QRCodeReaderSetupErr
-{
+#ifndef QR_CODE_READER_QUEUE_SIZE
+#define QR_CODE_READER_QUEUE_SIZE 10
+#endif
+
+enum QRCodeReaderSetupErr {
   SETUP_OK,
   SETUP_NO_PSRAM_ERROR,
   SETUP_CAMERA_INIT_ERROR,
 };
 
 /* This structure holds the decoded QR-code data */
-struct QRCodeData
-{
+struct QRCodeData {
   bool valid;
   int dataType;
   uint8_t payload[1024];
   int payloadLen;
 };
 
-class ESP32QRCodeReader
-{
+class ESP32QRCodeReader {
 private:
   TaskHandle_t qrCodeTaskHandler;
   CameraPins pins;
@@ -55,6 +56,7 @@ public:
   void begin();
   void beginOnCore(BaseType_t core);
   bool receiveQrCode(struct QRCodeData *qrCodeData, long timeoutMs);
+  void clearQueue();
   void end();
 
   void setDebug(bool);

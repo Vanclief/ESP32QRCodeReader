@@ -14,7 +14,8 @@ ESP32QRCodeReader::ESP32QRCodeReader(CameraPins pins)
 
 ESP32QRCodeReader::ESP32QRCodeReader(CameraPins pins, framesize_t frameSize)
     : pins(pins), frameSize(frameSize) {
-  qrCodeQueue = xQueueCreate(10, sizeof(struct QRCodeData));
+  qrCodeQueue =
+      xQueueCreate(QR_CODE_READER_QUEUE_SIZE, sizeof(struct QRCodeData));
 }
 
 ESP32QRCodeReader::~ESP32QRCodeReader() { end(); }
@@ -63,7 +64,6 @@ QRCodeReaderSetupErr ESP32QRCodeReader::setup() {
   // #endif
 
   // camera init
-  Serial.println("Camera init");
   esp_err_t err = esp_camera_init(&cameraConfig);
   if (err != ESP_OK) {
     return SETUP_CAMERA_INIT_ERROR;
@@ -239,6 +239,16 @@ bool ESP32QRCodeReader::receiveQrCode(struct QRCodeData *qrCodeData,
                                       long timeoutMs) {
   return xQueueReceive(qrCodeQueue, qrCodeData,
                        (TickType_t)pdMS_TO_TICKS(timeoutMs)) != 0;
+}
+
+void ESP32QRCodeReader::clearQueue() {
+  QRCodeData qrCodeData; // Temporary variable to store dequeued data
+  int itemsCleared = 0;
+
+  while (itemsCleared < QR_CODE_READER_QUEUE_SIZE &&
+         xQueueReceive(qrCodeQueue, &qrCodeData, (TickType_t)0) == pdPASS) {
+    itemsCleared++;
+  }
 }
 
 void ESP32QRCodeReader::end() {
